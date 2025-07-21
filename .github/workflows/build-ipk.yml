@@ -24,8 +24,9 @@ jobs:
         wget "${OPENVRT_SDK_URL}" -O openwrt-sdk.tar.zst
         tar -xf openwrt-sdk.tar.zst --strip-components=1
 
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
+        # Tidak perlu feeds update/install untuk lua-package.mk jika kita mengunduhnya langsung
+        # ./scripts/feeds update -a
+        # ./scripts/feeds install -a
         
         make defconfig
 
@@ -35,13 +36,18 @@ jobs:
         # Salin Makefile kustom Anda ke direktori paket
         cp ../Makefile package/${{ github.event.repository.name }}/Makefile
 
-        # --- MODIFIKASI INI: Cari dan salin lua-package.mk secara dinamis ---
-        LUA_PACKAGE_MK_PATH=$(find feeds -name "lua-package.mk" | head -n 1)
-        if [ -z "$LUA_PACKAGE_MK_PATH" ]; then
-          echo "ERROR: lua-package.mk not found in feeds directory!"
+        # --- MODIFIKASI INI: Unduh lua-package.mk langsung dan salin ---
+        # URL untuk lua-package.mk di repositori OpenWrt (branch master/main)
+        # Ini adalah cara paling andal untuk mendapatkan file tersebut
+        LUA_PACKAGE_MK_DOWNLOAD_URL="https://raw.githubusercontent.com/openwrt/packages/master/lang/lua/lua-package.mk"
+        
+        echo "Mengunduh lua-package.mk dari ${LUA_PACKAGE_MK_DOWNLOAD_URL}"
+        wget "${LUA_PACKAGE_MK_DOWNLOAD_URL}" -O package/${{ github.event.repository.name }}/lua-package.mk
+        
+        if [ ! -f "package/${{ github.event.repository.name }}/lua-package.mk" ]; then
+          echo "ERROR: Gagal mengunduh lua-package.mk. Pastikan URL benar dan ada koneksi."
           exit 1
         fi
-        cp "$LUA_PACKAGE_MK_PATH" package/${{ github.event.repository.name }}/
         # --- AKHIR MODIFIKASI ---
 
         # Salin file sumber Anda
