@@ -1,0 +1,53 @@
+#!/bin/sh /etc/rc.common
+# Auto reboot modem jika tidak ada ping, modular dan mudah dikonfigurasi untuk OpenWRT
+
+START=99
+
+USE_PROCD=1
+
+CONFIG_FILE="/etc/config/modem-auto-reboot"
+
+# Fungsi untuk membaca konfigurasi dari file
+load_config() {
+    MODEM_IP=$(uci get modem-auto-reboot.settings.modem_ip 2>/dev/null)
+    PING_COUNT=$(uci get modem-auto-reboot.settings.ping_count 2>/dev/null)
+    SLEEP_INTERVAL=$(uci get modem-auto-reboot.settings.sleep_interval 2>/dev/null)
+    REBOOT_CMD=$(uci get modem-auto-reboot.settings.reboot_cmd 2>/dev/null)
+    LOG_FILE=$(uci get modem-auto-reboot.settings.log_file 2>/dev/null)
+    LOG_MAX_LINES=$(uci get modem-auto-reboot.settings.log_max_lines 2>/dev/null)
+
+    # Set default jika parameter belum diisi
+    [ -z "$LOG_FILE" ] && LOG_FILE="/tmp/modem-auto-reboot.log"
+    [ -z "$LOG_MAX_LINES" ] && LOG_MAX_LINES=20
+}
+
+start_service() {
+    load_config
+    procd_open_instance
+    procd_set_param respawn 0 1 60
+    procd_set_param command /bin/sh -c '
+        echo "--- Service dimulai pada $(date) ---" >> '"$LOG_FILE"'
+        while true; do
+            if ping -c '"$PING_COUNT"' '"$MODEM_IP"' > /dev/null 2>&1; then
+                echo "[`date`] Ping sukses ke '"$MODEM_IP"'" >> '"$LOG_FILE"'
+            else
+                echo "[`date`] Ping gagal ke '"$MODEM_IP"', reboot..." >> '"$LOG_FILE"'
+                tail -n '"$LOG_MAX_LINES"' '"$LOG_FILE"' > '"$LOG_FILE"'.tmp
+                mv '"$LOG_FILE"'.tmp '"$LOG_FILE"'
+                '"$REBOOT_CMD"'
+                sleep 80  # Memberi waktu modem untuk recovery setelah reboot
+            fi
+            tail -n '"$LOG_MAX_LINES"' '"$LOG_FILE"' > '"$LOG_FILE"'.tmp
+            mv '"$LOG_FILE"'.tmp '"$LOG_FILE"'
+            sleep '"$SLEEP_INTERVAL"'
+        done
+    '
+    procd_close_instance
+}
+
+stop_service() {
+    load_config
+    echo "--- Service dihentikan pada $(date) ---" >> "$LOG_FILE"
+    tail -n "$LOG_MAX_LINES" "$LOG_FILE" > "$LOG_FILE.tmp"
+    mv "$LOG_FILE.tmp" "$LOG_FILE"
+}
