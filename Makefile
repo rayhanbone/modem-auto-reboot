@@ -9,7 +9,11 @@ PKG_SOURCE:=
 PKG_SOURCE_URL:=
 PKG_HASH:=
 
-include $(TOPDIR)/feeds/packages/lang/lua/lua-package.mk
+# --- MODIFIKASI INI ---
+include $(TOPDIR)/package/$(PKG_NAME)/lua-package.mk
+# --- DARI: include $(TOPDIR)/feeds/packages/lang/lua/lua-package.mk
+# --- KE: include $(TOPDIR)/package/$(PKG_NAME)/lua-package.mk
+
 
 # Define where the package will be built
 # This will copy files from your GitHub repo into the package structure
