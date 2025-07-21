@@ -1,0 +1,9 @@
+
+config settings 'settings'
+	option modem_ip '8.8.8.8'
+	option ping_count '3'
+	option sleep_interval '5'
+	option reboot_cmd 'echo AT+CFUN=15 | atinout - /dev/ttyACM2 -'
+	option log_file '/tmp/modem-auto-reboot.log'
+	option log_max_lines '10'
+
