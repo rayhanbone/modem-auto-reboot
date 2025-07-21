@@ -23,10 +23,6 @@ jobs:
 
         wget "${OPENVRT_SDK_URL}" -O openwrt-sdk.tar.zst
         tar -xf openwrt-sdk.tar.zst --strip-components=1
-
-        # Tidak perlu feeds update/install untuk lua-package.mk jika kita mengunduhnya langsung
-        # ./scripts/feeds update -a
-        # ./scripts/feeds install -a
         
         make defconfig
 
@@ -36,10 +32,9 @@ jobs:
         # Salin Makefile kustom Anda ke direktori paket
         cp ../Makefile package/${{ github.event.repository.name }}/Makefile
 
-        # --- MODIFIKASI INI: Unduh lua-package.mk langsung dan salin ---
-        # URL untuk lua-package.mk di repositori OpenWrt (branch master/main)
-        # Ini adalah cara paling andal untuk mendapatkan file tersebut
-        LUA_PACKAGE_MK_DOWNLOAD_URL="https://raw.githubusercontent.com/openwrt/packages/master/lang/lua/lua-package.mk"
+        # --- MODIFIKASI INI: Perbarui URL ke 'main' branch ---
+        # URL untuk lua-package.mk di repositori OpenWrt (branch main)
+        LUA_PACKAGE_MK_DOWNLOAD_URL="https://raw.githubusercontent.com/openwrt/packages/main/lang/lua/lua-package.mk"
         
         echo "Mengunduh lua-package.mk dari ${LUA_PACKAGE_MK_DOWNLOAD_URL}"
         wget "${LUA_PACKAGE_MK_DOWNLOAD_URL}" -O package/${{ github.event.repository.name }}/lua-package.mk
