@@ -3,12 +3,12 @@ name: Build OpenWrt IPK
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main # Trigger saat ada push ke branch main
+  workflow_dispatch: # Izinkan pemicuan manual dari GitHub Actions tab
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Gunakan runner Ubuntu terbaru
 
     steps:
     - name: Checkout repository
@@ -35,11 +35,14 @@ jobs:
         # Salin Makefile kustom Anda ke direktori paket
         cp ../Makefile package/${{ github.event.repository.name }}/Makefile
 
-        # --- TAMBAHAN INI ---
-        # Salin lua-package.mk ke direktori paket kustom Anda
-        # Ini mengambilnya dari lokasi feed SDK
-        cp feeds/packages/lang/lua/lua-package.mk package/${{ github.event.repository.name }}/
-        # --- AKHIR TAMBAHAN ---
+        # --- MODIFIKASI INI: Cari dan salin lua-package.mk secara dinamis ---
+        LUA_PACKAGE_MK_PATH=$(find feeds -name "lua-package.mk" | head -n 1)
+        if [ -z "$LUA_PACKAGE_MK_PATH" ]; then
+          echo "ERROR: lua-package.mk not found in feeds directory!"
+          exit 1
+        fi
+        cp "$LUA_PACKAGE_MK_PATH" package/${{ github.event.repository.name }}/
+        # --- AKHIR MODIFIKASI ---
 
         # Salin file sumber Anda
         mkdir -p package/${{ github.event.repository.name }}/etc/init.d
