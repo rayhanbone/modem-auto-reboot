@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - v*
-env:
-  ipk_repo: https://github.com/muink/homeproxy.git
-  ipk_branch: dev/main
 
 
 jobs:
