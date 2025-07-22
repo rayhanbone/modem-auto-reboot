@@ -1,42 +1,53 @@
-name: Build
+name: Build ImmortalWrt Package
 
 on:
-  push:
-    tags:
-      - v*
+   workflow_dispatch:
+  #   inputs:
+  #     package_repo:
+  #       description: 'Package Git Repository URL'
+  #       required: true
+  #       default: 'https://github.com/immortalwrt/luci-theme-argon'
+  #     version:
+  #       description: 'ImmortalWrt Version (e.g: 21.02.7)'
+  #       required: true
+  #       default: '24.10'
+  #
+env:
+  ipk_repo: https://github.com/muink/homeproxy.git
+  ipk_branch: dev/main
 
 
 jobs:
-  build:
-    name: Build ${{ matrix.arch }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch:
+  build-package:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-          - aarch64_generic
-          - i386_pentium-mmx
-          - loongarch64_generic
-          - mips_mips32
-          - mipsel_24kc
-          - mipsel_mips32
-          - x86_64
+    - name: Install dependencies
+      run: |
+        sudo -E apt-get -y update
+        sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
+        sudo -E apt-get -y install zstd clang lld libpcre3 libpcre3-dev clang-15 llvm-15 npm
+        export PATH="/usr/bin/clang++:$PATH"
 
-    - name: Building packages
-        uses: sbwml/openwrt-gh-action-sdk@go1.24
-        env:
-          ARCH: ${{ matrix.arch }}-openwrt-24.10
-          FEEDNAME: packages_ci
-          PACKAGES: luci-app-kucat-config
-          NO_REFRESH_CHECK: true
+    - name: Download Image Builder
+      run: |
+        IB_NAME="immortalwrt-imagebuilder-24.10.0-x86-64.Linux-x86_64"
+        wget https://downloads.immortalwrt.org/releases/24.10.0/targets/x86/64/$IB_NAME.tar.zst
+        tar -I zstd -xvf $IB_NAME.tar.zst
+        mv $IB_NAME imagebuilder
 
-    - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.arch }}
-          path: bin/packages/${{ matrix.arch }}/packages_ci/*.ipk
-    
+    - name: Clone package source
+      run: |
+        cd imagebuilder
+        git clone -b $ipk_branch $ipk_repo package/custom/homeproxy
+
+    - name: Build package
+      run: |
+        #        cd imagebuilder
+        make -j$(nproc) package/custom/homeproxy/compile V=s
+
     - name: Upload to Release
       uses: softprops/action-gh-release@v1
       with:
