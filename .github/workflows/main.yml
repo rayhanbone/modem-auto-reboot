@@ -26,11 +26,7 @@ jobs:
           - mipsel_mips32
           - x86_64
 
-    steps:
-      - uses: actions/checkout@main
-        with:
-          fetch-depth: 0
-      - name: Building packages
+    - name: Building packages
         uses: sbwml/openwrt-gh-action-sdk@go1.24
         env:
           ARCH: ${{ matrix.arch }}-openwrt-24.10
@@ -38,16 +34,19 @@ jobs:
           PACKAGES: luci-app-kucat-config
           NO_REFRESH_CHECK: true
 
-      - name: Upload artifacts
+    - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.arch }}
           path: bin/packages/${{ matrix.arch }}/packages_ci/*.ipk
-
-      - name: Upload packages
-        uses: ncipollo/release-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          allowUpdates: true
-          replacesArtifacts: true
-          artifacts: "bin/packages/${{ matrix.arch }}/packages_ci/*.ipk"
+    
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          imagebuilder/bin/packages/x86_64/base/*.ipk
+        tag_name: package-${{ github.run_id }}
+        name: Custom Package Build
+        body: "Automatically built ImmortalWrt package"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
